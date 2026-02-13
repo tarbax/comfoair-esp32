@@ -1,10 +1,10 @@
 esphome:
   name: esp32-comfoair-can-bridge
-  friendly_name: ComfoAir Q350 CAN
+  friendly_name: ComfoAir Q450 CAN
   name_add_mac_suffix: false
 
 esp32:
-  board: esp32dev
+  board: esp32-evb
   framework:
     type: arduino
 
@@ -19,7 +19,7 @@ external_components:
 
 api:
   encryption:
-    key: "msjssJ8+9dYODl4VWxVBNP1H0AQos10gHlTKhK2imNk="
+    key: "redacted"
   custom_services: true
 
 ota:
@@ -29,82 +29,76 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-# ComfoAir Komponente mit Climate-Entity
+# ComfoAir component with Climate entity
 comfoair:
   - id: comfo
-    name: "ComfoAir Q350"  # Name für das Climate-Entity (erforderlich!)
+    name: "ComfoAir Q450"
     
     # CAN-Bus Pins
-    tx_pin: 25
-    rx_pin: 21
+    tx_pin: 05
+    rx_pin: 35
     
-    # Optional: Climate-Entity Einstellungen
-    # visual:
-    #   min_temperature: 15 °C
-    #   max_temperature: 30 °C
-    #   temperature_step: 0.5 °C
-    
-    # Sensor-Konfigurationen (alle optional)
+    # Sensor configurations
     fan_speed:
-      name: "Lüfterstufe"
+      name: "Fan Speed"
     
-    exhaust_air_temp:  # Abluft
-      name: "Abluft Temperatur"
+    exhaust_air_temp:
+      name: "Exhaust Air Temperature"
     
-    extract_air_temp:  # Fortluft
-      name: "Fortluft Temperatur"
+    extract_air_temp:
+      name: "Extract Air Temperature"
     
-    outdoor_air_temp:  # Außenluft
-      name: "Außenluft Temperatur"
+    outdoor_air_temp:
+      name: "Outdoor Air Temperature"
     
-    supply_air_humidity:  # Zuluft Luftfeuchtigkeit
-      name: "Zuluft Luftfeuchtigkeit"
+    supply_air_humidity:
+      name: "Supply Air Humidity"
     
-    exhaust_air_humidity:  # Abluft Luftfeuchtigkeit
-      name: "Abluft Luftfeuchtigkeit"
+    exhaust_air_humidity:
+      name: "Exhaust Air Humidity"
     
     target_temp:
-      name: "Soll-Temperatur"
+      name: "Target Temperature"
     
     bypass_state:
       name: "Bypass Status"
     
     power_consumption_current:
-      name: "Stromverbrauch aktuell"
+      name: "Current Power Consumption"
     
     days_remaining_filter:
-      name: "Tage bis Filterwechsel"
+      name: "Days Until Filter Change"
     
-    # Text Sensoren
+    # Text Sensors
     operating_mode:
-      name: "Betriebsmodus"
+      name: "Operating Mode"
     
     temp_profile:
-      name: "Temperaturprofil"
+      name: "Temperature Profile"
     
-    # Binary Sensoren
+    # Binary Sensors
     heating_season:
-      name: "Heizperiode"
+      name: "Heating Season"
     
     cooling_season:
-      name: "Kühlperiode"
+      name: "Cooling Season"
     
     manual_mode:
-      name: "Manueller Modus"
+      name: "Manual Mode"
 
-# Zeit-Synchronisation
+# Time synchronization
 time:
   - platform: homeassistant
     id: homeassistant_time
 
-# Web-Server für lokalen Zugriff
+# Web server for local access
 web_server:
   port: 80
 
-# Manuelle Steuerung via Buttons
+# Manual control via buttons
 button:
   - platform: template
-    name: "Boost 10 Minuten"
+    name: "Boost 10 Minutes"
     id: comfoair_boost_10min
     on_press:
       then:
@@ -112,100 +106,130 @@ button:
             id(comfo).send_command("boost_10_min");
   
   - platform: template
-    name: "Boost 20 Minuten"
+    name: "Boost 20 Minutes"
     on_press:
       then:
         - lambda: |-
             id(comfo).send_command("boost_20_min");
   
   - platform: template
-    name: "Boost 30 Minuten"
+    name: "Boost 30 Minutes"
     on_press:
       then:
         - lambda: |-
             id(comfo).send_command("boost_30_min");
+
+  - platform: template
+    name: "Boost 60 Minutes"
+    on_press:
+      then:
+        - lambda: |-
+            id(comfo).send_command("boost_60_min");
   
   - platform: template
-    name: "Boost beenden"
+    name: "End Boost"
     on_press:
       then:
         - lambda: |-
             id(comfo).send_command("boost_end");
 
-# Select-Menüs für manuelle Steuerung
+# Select-Menu voor handmatige besturing met nieuwe namen
 select:
   - platform: template
-    name: "Lüftungsstufe"
+    name: "Ventilation Level"
     id: comfoair_ventilation_level
     optimistic: true
     options:
-      - "Abwesend"
-      - "Stufe 1"
-      - "Stufe 2"
-      - "Stufe 3"
-    initial_option: "Stufe 1"
+      - "Away"
+      - "Low"
+      - "Medium"
+      - "High"
+    initial_option: "Low"
     set_action:
       - lambda: |-
-          if (x == "Stufe 1") {
+          if (x == "Low") {
             id(comfo).send_command("ventilation_level_1");
-          } else if (x == "Stufe 2") {
+          } else if (x == "Medium") {
             id(comfo).send_command("ventilation_level_2");
-          } else if (x == "Stufe 3") {
+          } else if (x == "High") {
             id(comfo).send_command("ventilation_level_3");
-          } else if (x == "Abwesend") {
+          } else if (x == "Away") {
             id(comfo).send_command("ventilation_level_0");
           }
   
   - platform: template
-    name: "Betriebsmodus"
+    name: "Operating Mode"
     id: comfoair_mode
     optimistic: true
     options:
       - "Auto"
-      - "Manuell"
+      - "Manual"
     initial_option: "Auto"
     set_action:
       - lambda: |-
           if (x == "Auto") {
             id(comfo).send_command("auto");
-          } else if (x == "Manuell") {
+          } else if (x == "Manual") {
             id(comfo).send_command("manual");
           }
   
   - platform: template
-    name: "Temperaturprofil"
+    name: "Temperature Profile"
     id: comfoair_temp_profile
     optimistic: true
     options:
       - "Normal"
-      - "Kühl"
+      - "Cool"
       - "Warm"
     initial_option: "Normal"
     set_action:
       - lambda: |-
           if (x == "Normal") {
             id(comfo).send_command("temp_profile_normal");
-          } else if (x == "Kühl") {
+          } else if (x == "Cool") {
             id(comfo).send_command("temp_profile_cool");
           } else if (x == "Warm") {
             id(comfo).send_command("temp_profile_warm");
           }
   
   - platform: template
-    name: "Bypass Modus"
+    name: "Bypass Mode"
     id: comfoair_bypass
     optimistic: true
     options:
       - "Auto"
-      - "1h aktiviert"
-      - "1h deaktiviert"
+      - "1h Activated"
+      - "1h Deactivated"
     initial_option: "Auto"
     set_action:
       - lambda: |-
           if (x == "Auto") {
             id(comfo).send_command("bypass_auto");
-          } else if (x == "1h aktiviert") {
+          } else if (x == "1h Activated") {
             id(comfo).send_command("bypass_activate_1h");
-          } else if (x == "1h deaktiviert") {
+          } else if (x == "1h Deactivated") {
             id(comfo).send_command("bypass_deactivate_1h");
           }
+
+# Fan entiteit voor Home Assistant
+# fan:
+#   - platform: template
+#     name: "ComfoAir Fan"
+#     id: comfoair_fan
+#     # Koppelt de snelheid aan de select opties
+#     speed_count: 3 # Stand 1, 2, en 3 (Away wordt vaak als 'off' of 0 gezien)
+#     on_speed_set:
+#       - lambda: |-
+#           if (speed == 1) {
+#             id(comfo).send_command("ventilation_level_1");
+#           } else if (speed == 2) {
+#             id(comfo).send_command("ventilation_level_2");
+#           } else if (speed == 3) {
+#             id(comfo).send_command("ventilation_level_3");
+#           }
+#     on_turn_off:
+#       - lambda: |-
+#           id(comfo).send_command("ventilation_level_0"); # 'Away' stand
+#     on_turn_on:
+#       - lambda: |-
+#           id(comfo).send_command("ventilation_level_1");
