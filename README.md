@@ -59,6 +59,7 @@ Questions? Join the [Discord](https://discord.gg/dUSSRezJXC) or open an issue.
 
    ota:
      - platform: esphome
+       encryption:              # encrypt updates with the api key
 
    wifi:
      ssid: !secret wifi_ssid
@@ -359,6 +360,7 @@ documentation linked under [Credits](#credits).
 | **Config error about services / `custom_services`** | Add `custom_services: true` under `api:` (needed since ESPHome 2026.3). |
 | **Fan speed shows 0 right after a reboot** | The unit only sends the real value when it changes. The component ignores this boot-time 0 and re-polls everything 30 s after boot. |
 | **Boost select shows `Off` while the unit still boosts** | The boost was started elsewhere (panel, app). The unit doesn't report boosts, so the select can't know. |
+| **Warning *"The device did not offer OTA encryption"*** | Harmless on the first install after upgrading ESPHome. Add `encryption:` under `ota: - platform: esphome` (it reuses the `api` key); later installs are encrypted. |
 | **Too many updates in the HA history** | Use [`global_filters`](#fewer-updates-global_filters). |
 | **Build error `can_common.h: No such file or directory`** | Update to the latest version of this component; it pins a CAN library that declares this dependency. Clear the build files in ESPHome (*Clean build files*) and build again. |
 

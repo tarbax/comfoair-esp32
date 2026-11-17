@@ -24,6 +24,7 @@ api:
 
 ota:
   - platform: esphome
+    encryption:                  # uses the api encryption key
 
 # Ethernet and Wi-Fi are both active. Traffic uses the first connected
 # interface in this list, so Wi-Fi takes over when the cable is unplugged

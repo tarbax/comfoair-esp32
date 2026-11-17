@@ -39,6 +39,7 @@ api:
 
 ota:
   - platform: esphome
+    encryption:                  # uses the api encryption key
 
 wifi:
   ssid: !secret wifi_ssid
