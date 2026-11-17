@@ -277,7 +277,7 @@ def _timer_select_schema(icon, default_durations):
 
 
 FAN_SCHEMA = cv.maybe_simple_value(
-    fan.fan_schema(ComfoairFan, icon="mdi:hvac"),
+    fan.fan_schema(ComfoairFan, icon="mdi:fan"),
     key=CONF_NAME,
 )
 
