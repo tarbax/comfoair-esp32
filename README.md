@@ -119,8 +119,8 @@ Wiring (by @mat3u). Colours are the wires of a standard Ethernet cable on the Co
 
 ### Option C: OLIMEX ESP32-EVB
 
-This board has the CAN transceiver built in and wired Ethernet, so you only need a 12 V → 5 V
-converter. It needs different pins (`tx_pin: 5`, `rx_pin: 35`).
+This board has the CAN transceiver built in and wired Ethernet (with automatic Wi-Fi
+failover), so you only need a 12 V → 5 V converter. It needs different pins (`tx_pin: 5`, `rx_pin: 35`).
 See **[docs/olimex-esp32-evb.md](docs/olimex-esp32-evb.md)** for wiring and a ready-made config.
 
 ## Configuration
@@ -191,7 +191,7 @@ comfoair:
 | File | What it shows |
 |---|---|
 | [docs/esphome_sample.yaml](docs/esphome_sample.yaml) | Minimal working config with comments |
-| [docs/esphome_olimex_esp32_evb.yaml](docs/esphome_olimex_esp32_evb.yaml) | OLIMEX ESP32-EVB with Ethernet ([guide](docs/olimex-esp32-evb.md)) |
+| [docs/esphome_olimex_esp32_evb.yaml](docs/esphome_olimex_esp32_evb.yaml) | OLIMEX ESP32-EVB, Ethernet with Wi-Fi failover ([guide](docs/olimex-esp32-evb.md)) |
 | [docs/esphome_sample_with_climate.yaml](docs/esphome_sample_with_climate.yaml) | Q450 on an ESP32-EVB over Wi-Fi, with extra template selects |
 | [docs/esphome_complete_reference.yaml](docs/esphome_complete_reference.yaml) | Every option and sensor (comments in German) |
 

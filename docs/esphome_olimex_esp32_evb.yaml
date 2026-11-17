@@ -1,5 +1,6 @@
-# ComfoAir Q on an OLIMEX ESP32-EVB (on-board CAN transceiver, Ethernet)
+# ComfoAir Q on an OLIMEX ESP32-EVB (on-board CAN transceiver, Ethernet + Wi-Fi)
 # See docs/olimex-esp32-evb.md for wiring.
+# Needs a recent ESPHome (tested with 2026.10).
 
 esphome:
   name: comfoair
@@ -24,13 +25,27 @@ api:
 ota:
   - platform: esphome
 
-# Wired network. Prefer Wi-Fi? Remove this block and add a `wifi:` block instead.
+# Ethernet and Wi-Fi are both active. Traffic uses the first connected
+# interface in this list, so Wi-Fi takes over when the cable is unplugged
+# and Ethernet takes over again when it comes back.
+# Only one of them? Remove the other block and this `network:` block.
+network:
+  priority:
+    - ethernet
+    - wifi
+
 ethernet:
   type: LAN8720
   mdc_pin: GPIO23
   mdio_pin: GPIO18
-  clk_mode: GPIO0_IN
+  clk:
+    mode: CLK_EXT_IN
+    pin: 0
   phy_addr: 0
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 
 comfoair:
   - id: comfo
