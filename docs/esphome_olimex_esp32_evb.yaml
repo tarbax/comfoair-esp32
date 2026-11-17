@@ -1,0 +1,49 @@
+# ComfoAir Q on an OLIMEX ESP32-EVB (on-board CAN transceiver, Ethernet)
+# See docs/olimex-esp32-evb.md for wiring.
+
+esphome:
+  name: comfoair
+  friendly_name: ComfoAir
+
+esp32:
+  board: esp32-evb
+  framework:
+    type: arduino
+
+external_components:
+  - source: github://tarbax/comfoair-esp32
+    components: [comfoair]
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_key
+  custom_services: true          # required for the comfoair services
+
+ota:
+  - platform: esphome
+
+# Wired network. Prefer Wi-Fi? Remove this block and add a `wifi:` block instead.
+ethernet:
+  type: LAN8720
+  mdc_pin: GPIO23
+  mdio_pin: GPIO18
+  clk_mode: GPIO0_IN
+  phy_addr: 0
+
+comfoair:
+  - id: comfo
+    name: "ComfoAir"             # climate entity
+    # The ESP32-EVB's on-board CAN transceiver. Do not use the defaults (21/25):
+    # those pins belong to the Ethernet chip on this board.
+    tx_pin: 5
+    rx_pin: 35
+
+    # Optional: change names or the offered durations
+    # fan:
+    #   name: "Ventilation"
+    # boost:
+    #   durations: [10min, 20min, 30min, 1h, 2h, 3h, 4h]
+    # bypass:
+    #   durations: [1h, 2h, 4h, 8h, 12h, 24h]

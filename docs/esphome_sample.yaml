@@ -44,8 +44,8 @@ comfoair:
       name: "Boost"
       durations: [10min, 20min, 30min, 45min, 1h, 2h, 3h, 4h, 6h, 8h]
 
-    # Bypass select: "Auto", "Open <duration>", "Open", "Closed <duration>", "Closed".
-    # "Open"/"Closed" without a duration stay active until changed.
+    # Bypass select: "Auto", "Open <duration>", "Open (permanent)",
+    # "Closed <duration>", "Closed (permanent)".
     bypass:
       name: "Bypass"
       durations: [1h, 2h, 4h, 8h, 12h, 24h]

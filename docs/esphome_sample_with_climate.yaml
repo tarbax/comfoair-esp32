@@ -19,7 +19,7 @@ external_components:
 
 api:
   encryption:
-    key: "redacted"
+    key: !secret api_key
   custom_services: true
 
 ota:
@@ -47,7 +47,7 @@ comfoair:
       name: "Boost"
       durations: [10min, 20min, 30min, 1h, 2h, 3h, 4h]
 
-    # Bypass select: Auto / Open <duration> / Open / Closed <duration> / Closed
+    # Bypass select: Auto / Open <duration> / Open (permanent) / Closed <duration> / Closed (permanent)
     bypass:
       name: "Bypass"
       durations: [1h, 2h, 4h, 8h, 12h, 24h]
