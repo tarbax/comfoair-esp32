@@ -14,6 +14,26 @@ esp32:
   board: esp32dev
   framework:
     type: arduino
+    # -------------------------------------------------------------------------
+    # BEKANNTES BUILD-PROBLEM: "can_common.h: No such file or directory"
+    # -------------------------------------------------------------------------
+    # Neuere ESPHome-/PlatformIO-Versionen bauen das Arduino-Framework als
+    # ESP-IDF-Komponenten. Dabei wird für jede über cg.add_library() eingebundene
+    # Arduino-Bibliothek automatisch eine CMakeLists.txt erzeugt. Die gepinnte
+    # esp32_can-Fork deklariert in ihrer library.properties kein
+    # "depends=can_common", weshalb der Auto-Generator can_common nicht in die
+    # REQUIRES-Liste aufnimmt -> Build schlägt mit obigem Fehler fehl.
+    #
+    # Fix A (sauber): Fork von esp32_can erstellen, in library.properties die
+    #   Zeile "depends=can_common" ergänzen und in components/comfoair/__init__.py
+    #   die cg.add_library("esp32_can", ...)-URL auf den eigenen Fork/Commit
+    #   umbiegen.
+    #
+    # Fix B (schneller Workaround, nicht garantiert): eine ältere/andere
+    #   platform-espressif32-Version pinnen, die Arduino noch nicht als
+    #   ESP-IDF-Komponente baut, z. B.:
+    #
+    # platform_version: https://github.com/pioarduino/platform-espressif32/releases/download/53.03.13/platform-espressif32.zip
 
 logger:
   level: DEBUG
@@ -21,15 +41,15 @@ logger:
 external_components:
   - source:
       type: git
-      url: https://github.com/waverider93/comfoair-esp32
-      ref: fix/memory-leak-and-optimizations
+      url: https://github.com/tarbax/comfoair-esp32
+      ref: master  # Für neue Features vor dem Merge (z. B. feature/fireplace-mode) hier den Branch-Namen eintragen
     components: [comfoair]
     refresh: 1d
 
 api:
   encryption:
     key: !secret api_key
-  custom_services: true
+  custom_services: true  # Required for comfoair component (ESPHome 2026.3+)
 
 ota:
   - platform: esphome
@@ -60,6 +80,26 @@ comfoair:
       temperature_step: 0.5 °C
     
     # disabled_by_default: false  # Alle Entitäten standardmäßig aktiviert
+
+    # =========================================================================
+    # NATIVE STEUER-ENTITÄTEN (werden standardmäßig angelegt)
+    # =========================================================================
+    # Fan-Entity: Aus = Abwesend (Stufe 0), Geschwindigkeit 1-3 = Stufe 1-3,
+    # Preset "Auto" = zurück zum Automatik-Zeitplan.
+    fan:
+      name: "Lüftung"
+      # internal: true          # ausblenden
+
+    # Boost-Select: "Off" + eine Option je Dauer (beliebige Minuten/Stunden).
+    boost:
+      name: "Boost"
+      durations: [10min, 20min, 30min, 45min, 1h, 2h, 3h, 4h, 6h, 8h]
+
+    # Bypass-Select: "Auto", "Open <Dauer>", "Open", "Closed <Dauer>", "Closed".
+    # "Open"/"Closed" ohne Dauer bleiben aktiv bis zur nächsten Änderung.
+    bypass:
+      name: "Bypass"
+      durations: [1h, 2h, 4h, 8h, 12h, 24h]
     
     # =========================================================================
     # SENSOREN (Sensor-Plattform)
@@ -139,7 +179,7 @@ comfoair:
     # -------------------------------------------------------------------------
     days_remaining_filter:
       name: "Tage bis Filterwechsel"
-      # unit_of_measurement: "days"
+      # unit_of_measurement: "d"
     
     # -------------------------------------------------------------------------
     # Wärmerückgewinnung - Heizung vermieden
@@ -182,7 +222,7 @@ comfoair:
     # Temperaturen (Genauigkeit: 1 Dezimalstelle)
     # -------------------------------------------------------------------------
     rmot:
-      name: "Raumtemperatur (RMOT)"
+      name: "Gleitende Außentemperatur (RMOT)"
       # unit_of_measurement: "°C"
       # accuracy_decimals: 1
     
@@ -197,17 +237,17 @@ comfoair:
       # accuracy_decimals: 1
     
     post_heater_temp_before:
-      name: "Nachheizer Temperatur vorher"
+      name: "Zuluft Temperatur"  # PDO 221, in der ComfoConnect-App als Zuluft angezeigt
       # unit_of_measurement: "°C"
       # accuracy_decimals: 1
     
     extract_air_temp:
-      name: "Fortluft Temperatur"  # Aus dem Raum
+      name: "Abluft Temperatur"  # Aus den Räumen
       # unit_of_measurement: "°C"
       # accuracy_decimals: 1
     
     exhaust_air_temp:
-      name: "Abluft Temperatur"  # Nach Wärmetauscher
+      name: "Fortluft Temperatur"  # Nach Wärmetauscher, nach draußen
       # unit_of_measurement: "°C"
       # accuracy_decimals: 1
     
@@ -230,11 +270,11 @@ comfoair:
     # Luftfeuchtigkeit
     # -------------------------------------------------------------------------
     extract_air_humidity:
-      name: "Fortluft Luftfeuchtigkeit"
+      name: "Abluft Luftfeuchtigkeit"
       # unit_of_measurement: "%"
     
     exhaust_air_humidity:
-      name: "Abluft Luftfeuchtigkeit"
+      name: "Fortluft Luftfeuchtigkeit"
       # unit_of_measurement: "%"
     
     outdoor_air_humidity:
@@ -328,62 +368,27 @@ web_server:
   port: 80
 
 # ============================================================================
-# BUTTONS - Verfügbare Befehle
+# SWITCHES - CAN-Trace-Modus per Schalter ein-/ausschalten
 # ============================================================================
-button:
-  # Boost-Modi
+switch:
   - platform: template
-    name: "Boost 10 Minuten"
-    on_press:
-      - lambda: id(comfo).send_command("boost_10_min");
-  
-  - platform: template
-    name: "Boost 20 Minuten"
-    on_press:
-      - lambda: id(comfo).send_command("boost_20_min");
-  
-  - platform: template
-    name: "Boost 30 Minuten"
-    on_press:
-      - lambda: id(comfo).send_command("boost_30_min");
-  
-  - platform: template
-    name: "Boost 60 Minuten"
-    on_press:
-      - lambda: id(comfo).send_command("boost_60_min");
-  
-  - platform: template
-    name: "Boost beenden"
-    on_press:
-      - lambda: id(comfo).send_command("boost_end");
+    name: "CAN Trace"
+    icon: "mdi:bug-check-outline"
+    # optimistic: false, da der Zustand direkt aus der Komponente gelesen wird
+    lambda: |-
+      return id(comfo).is_can_trace_enabled();
+    turn_on_action:
+      - lambda: id(comfo).enable_can_trace();
+    turn_off_action:
+      - lambda: id(comfo).disable_can_trace();
+    # Hinweis: Die Komponente deaktiviert das Tracing automatisch nach 10 Minuten.
+    # Der Schalter zeigt dank lambda-Statusabfrage dann automatisch wieder "aus" an,
+    # sobald ESPHome den Zustand das nächste Mal abfragt (Standard: alle paar Sekunden).
 
 # ============================================================================
 # SELECT-MENÜS - Alle verfügbaren Befehle
 # ============================================================================
 select:
-  # Lüftungsstufen
-  - platform: template
-    name: "Lüftungsstufe"
-    id: comfoair_ventilation_level
-    optimistic: true
-    options:
-      - "Stufe 0 (Abwesend)"
-      - "Stufe 1"
-      - "Stufe 2"
-      - "Stufe 3"
-    initial_option: "Stufe 1"
-    set_action:
-      - lambda: |-
-          if (x == "Stufe 0 (Abwesend)") {
-            id(comfo).send_command("ventilation_level_0");
-          } else if (x == "Stufe 1") {
-            id(comfo).send_command("ventilation_level_1");
-          } else if (x == "Stufe 2") {
-            id(comfo).send_command("ventilation_level_2");
-          } else if (x == "Stufe 3") {
-            id(comfo).send_command("ventilation_level_3");
-          }
-  
   # Betriebsmodus
   - platform: template
     name: "Betriebsmodus"
@@ -421,26 +426,6 @@ select:
             id(comfo).send_command("temp_profile_warm");
           }
   
-  # Bypass-Steuerung
-  - platform: template
-    name: "Bypass Modus"
-    id: comfoair_bypass
-    optimistic: true
-    options:
-      - "Auto"
-      - "1 Stunde aktiviert"
-      - "1 Stunde deaktiviert"
-    initial_option: "Auto"
-    set_action:
-      - lambda: |-
-          if (x == "Auto") {
-            id(comfo).send_command("bypass_auto");
-          } else if (x == "1 Stunde aktiviert") {
-            id(comfo).send_command("bypass_activate_1h");
-          } else if (x == "1 Stunde deaktiviert") {
-            id(comfo).send_command("bypass_deactivate_1h");
-          }
-  
   # Lüfter-Modus (Nur Zuluft/Nur Abluft)
   - platform: template
     name: "Lüfter-Spezial-Modus"
@@ -473,20 +458,18 @@ select:
 #   - ventilation_level_2
 #   - ventilation_level_3
 #
-# Boost-Modi:
-#   - boost_10_min
-#   - boost_20_min
-#   - boost_30_min
-#   - boost_60_min
+# Boost-Modi (beliebige Dauer):
+#   - boost_<N>_min   z. B. boost_10_min, boost_45_min
+#   - boost_<N>h      z. B. boost_2h
 #   - boost_end
 #
 # Betriebsmodus:
 #   - auto
 #   - manual
 #
-# Bypass:
-#   - bypass_activate_1h
-#   - bypass_deactivate_1h
+# Bypass (beliebige Dauer):
+#   - bypass_activate_<N>h / bypass_activate_<N>_min / bypass_activate_permanent
+#   - bypass_deactivate_<N>h / bypass_deactivate_<N>_min / bypass_deactivate_permanent
 #   - bypass_auto
 #
 # Spezial-Modi:
@@ -523,4 +506,27 @@ select:
 # 4. esphome.esp32_comfoair_can_bridge_update_all
 #    Keine Parameter
 #    Aktualisiert alle PDOs
+#
+# 5. esphome.esp32_comfoair_can_bridge_boost
+#    Parameter: minutes (int), 0 = Boost beenden
+#
+# 6. esphome.esp32_comfoair_can_bridge_bypass
+#    Parameter: mode (auto | open | closed), minutes (int, 0 = bis zur Änderung)
+#
+# 7. esphome.esp32_comfoair_can_bridge_enable_can_trace
+#    Keine Parameter
+#    Aktiviert das CAN-Trace-Logging (RX/TX-Frames via ESP_LOGI).
+#    Deaktiviert sich automatisch nach 10 Minuten.
+#
+# 8. esphome.esp32_comfoair_can_bridge_disable_can_trace
+#    Keine Parameter
+#    Deaktiviert das CAN-Trace-Logging manuell.
+#
+# 9. esphome.esp32_comfoair_can_bridge_set_can_trace_pdo_filter
+#    Parameter: pdo (float/number)
+#    Schränkt das Trace-Logging auf eine einzelne PDO-ID ein.
+#
+# 10. esphome.esp32_comfoair_can_bridge_clear_can_trace_pdo_filter
+#    Keine Parameter
+#    Entfernt den PDO-Filter (loggt wieder alle Frames).
 # ============================================================================

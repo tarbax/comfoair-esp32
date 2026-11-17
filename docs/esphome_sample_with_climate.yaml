@@ -13,8 +13,8 @@ logger:
 external_components:
   - source:
       type: git
-      url: https://github.com/waverider93/comfoair-esp32
-      ref: fix/memory-leak-and-optimizations
+      url: https://github.com/tarbax/comfoair-esp32
+      ref: master
     components: [comfoair]
 
 api:
@@ -37,6 +37,20 @@ comfoair:
     # CAN-Bus Pins
     tx_pin: 05
     rx_pin: 35
+
+    # Native fan entity: off = away (level 0), speed 1-3, preset "Auto"
+    fan:
+      name: "Ventilation"
+
+    # Boost select: "Off" + one option per duration
+    boost:
+      name: "Boost"
+      durations: [10min, 20min, 30min, 1h, 2h, 3h, 4h]
+
+    # Bypass select: Auto / Open <duration> / Open / Closed <duration> / Closed
+    bypass:
+      name: "Bypass"
+      durations: [1h, 2h, 4h, 8h, 12h, 24h]
     
     # Sensor configurations
     fan_speed:
@@ -95,68 +109,9 @@ time:
 web_server:
   port: 80
 
-# Manual control via buttons
-button:
-  - platform: template
-    name: "Boost 10 Minutes"
-    id: comfoair_boost_10min
-    on_press:
-      then:
-        - lambda: |-
-            id(comfo).send_command("boost_10_min");
-  
-  - platform: template
-    name: "Boost 20 Minutes"
-    on_press:
-      then:
-        - lambda: |-
-            id(comfo).send_command("boost_20_min");
-  
-  - platform: template
-    name: "Boost 30 Minutes"
-    on_press:
-      then:
-        - lambda: |-
-            id(comfo).send_command("boost_30_min");
-
-  - platform: template
-    name: "Boost 60 Minutes"
-    on_press:
-      then:
-        - lambda: |-
-            id(comfo).send_command("boost_60_min");
-  
-  - platform: template
-    name: "End Boost"
-    on_press:
-      then:
-        - lambda: |-
-            id(comfo).send_command("boost_end");
-
-# Select-Menu voor handmatige besturing met nieuwe namen
+# Select menus for manual control
+# (ventilation level, boost and bypass are native entities now, see above)
 select:
-  - platform: template
-    name: "Ventilation Level"
-    id: comfoair_ventilation_level
-    optimistic: true
-    options:
-      - "Away"
-      - "Low"
-      - "Medium"
-      - "High"
-    initial_option: "Low"
-    set_action:
-      - lambda: |-
-          if (x == "Low") {
-            id(comfo).send_command("ventilation_level_1");
-          } else if (x == "Medium") {
-            id(comfo).send_command("ventilation_level_2");
-          } else if (x == "High") {
-            id(comfo).send_command("ventilation_level_3");
-          } else if (x == "Away") {
-            id(comfo).send_command("ventilation_level_0");
-          }
-  
   - platform: template
     name: "Operating Mode"
     id: comfoair_mode
@@ -191,45 +146,3 @@ select:
           } else if (x == "Warm") {
             id(comfo).send_command("temp_profile_warm");
           }
-  
-  - platform: template
-    name: "Bypass Mode"
-    id: comfoair_bypass
-    optimistic: true
-    options:
-      - "Auto"
-      - "1h Activated"
-      - "1h Deactivated"
-    initial_option: "Auto"
-    set_action:
-      - lambda: |-
-          if (x == "Auto") {
-            id(comfo).send_command("bypass_auto");
-          } else if (x == "1h Activated") {
-            id(comfo).send_command("bypass_activate_1h");
-          } else if (x == "1h Deactivated") {
-            id(comfo).send_command("bypass_deactivate_1h");
-          }
-
-# Fan entiteit voor Home Assistant
-# fan:
-#   - platform: template
-#     name: "ComfoAir Fan"
-#     id: comfoair_fan
-#     # Koppelt de snelheid aan de select opties
-#     speed_count: 3 # Stand 1, 2, en 3 (Away wordt vaak als 'off' of 0 gezien)
-#     on_speed_set:
-#       - lambda: |-
-#           if (speed == 1) {
-#             id(comfo).send_command("ventilation_level_1");
-#           } else if (speed == 2) {
-#             id(comfo).send_command("ventilation_level_2");
-#           } else if (speed == 3) {
-#             id(comfo).send_command("ventilation_level_3");
-#           }
-#     on_turn_off:
-#       - lambda: |-
-#           id(comfo).send_command("ventilation_level_0"); # 'Away' stand
-#     on_turn_on:
-#       - lambda: |-
-#           id(comfo).send_command("ventilation_level_1");
